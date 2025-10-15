@@ -103,7 +103,7 @@ require_once APP_PATH . '/Views/layouts/header.php';
                                             </td>
                                             <td>
                                                 <div class="btn-group btn-group-sm">
-                                                    <a href="<?php echo URL_BASE; ?>/courts/view/<?php echo $court['id']; ?>" 
+                                                    <a href="<?php echo URL_BASE; ?>/courts/viewCourt/<?php echo $court['id']; ?>" 
                                                        class="btn btn-info" title="Ver detalles">
                                                         <i class="bi bi-eye"></i>
                                                     </a>

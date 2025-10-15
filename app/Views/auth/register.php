@@ -32,6 +32,29 @@ require_once APP_PATH . '/Views/layouts/header.php';
                     <?php endif; ?>
                     
                     <form method="POST" action="<?php echo URL_BASE; ?>/auth/register">
+                        <div class="mb-3">
+                            <label class="form-label">Tipo de Registro *</label>
+                            <div class="btn-group w-100" role="group">
+                                <input type="radio" class="btn-check" name="user_type" id="type_player" value="player" checked>
+                                <label class="btn btn-outline-primary" for="type_player">
+                                    <i class="bi bi-person"></i> Jugador
+                                </label>
+                                
+                                <input type="radio" class="btn-check" name="user_type" id="type_club" value="club">
+                                <label class="btn btn-outline-primary" for="type_club">
+                                    <i class="bi bi-building"></i> Club
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div id="club_name_field" class="mb-3" style="display: none;">
+                            <label for="club_name" class="form-label">Nombre del Club *</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-building"></i></span>
+                                <input type="text" class="form-control" id="club_name" name="club_name">
+                            </div>
+                        </div>
+                        
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="first_name" class="form-label">Nombre *</label>
@@ -78,10 +101,47 @@ require_once APP_PATH . '/Views/layouts/header.php';
                             </div>
                         </div>
                         
+                        <?php
+                        // Generate CAPTCHA numbers
+                        $num1 = rand(1, 10);
+                        $num2 = rand(1, 10);
+                        $_SESSION['captcha_answer'] = $num1 + $num2;
+                        ?>
+                        <div class="mb-3">
+                            <label for="captcha" class="form-label">Verificación de Seguridad *</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light">
+                                    <strong><?php echo $num1; ?> + <?php echo $num2; ?> = ?</strong>
+                                </span>
+                                <input type="number" class="form-control" id="captcha" name="captcha" 
+                                       placeholder="Escribe el resultado" required>
+                            </div>
+                            <small class="text-muted">Resuelve la suma para continuar</small>
+                        </div>
+                        
                         <button type="submit" class="btn btn-primary w-100 py-2">
                             <i class="bi bi-person-plus"></i> Crear Cuenta
                         </button>
                     </form>
+                    
+                    <script>
+                    // Show/hide club name field based on user type
+                    document.querySelectorAll('input[name="user_type"]').forEach(radio => {
+                        radio.addEventListener('change', function() {
+                            const clubNameField = document.getElementById('club_name_field');
+                            const clubNameInput = document.getElementById('club_name');
+                            
+                            if (this.value === 'club') {
+                                clubNameField.style.display = 'block';
+                                clubNameInput.required = true;
+                            } else {
+                                clubNameField.style.display = 'none';
+                                clubNameInput.required = false;
+                                clubNameInput.value = '';
+                            }
+                        });
+                    });
+                    </script>
                     
                     <hr class="my-4">
                     
