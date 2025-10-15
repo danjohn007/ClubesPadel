@@ -1,0 +1,29 @@
+# Configuration files with sensitive data
+config/database.php
+
+# Temporary files
+*.tmp
+*.log
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Uploads and generated files
+uploads/*
+!uploads/.htaccess
+temp/*
+!temp/.htaccess
+
+# Cache
+cache/*
+!cache/.htaccess
