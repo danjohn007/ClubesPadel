@@ -41,8 +41,11 @@ class Club {
         
         $trialEndsAt = date('Y-m-d H:i:s', strtotime('+' . TRIAL_PERIOD_DAYS . ' days'));
         
+        // Generate subdomain from name if not provided
+        $subdomain = $data['subdomain'] ?? $this->generateSubdomain($data['name']);
+        
         $params = [
-            $data['subdomain'],
+            $subdomain,
             $data['name'],
             $data['email'],
             $data['phone'] ?? null,
@@ -57,6 +60,23 @@ class Club {
         
         $this->db->query($sql, $params);
         return $this->db->lastInsertId();
+    }
+    
+    private function generateSubdomain($name) {
+        // Convert to lowercase and remove special characters
+        $subdomain = strtolower(trim($name));
+        $subdomain = preg_replace('/[^a-z0-9]+/', '-', $subdomain);
+        $subdomain = trim($subdomain, '-');
+        
+        // Check if subdomain exists and add number if needed
+        $originalSubdomain = $subdomain;
+        $counter = 1;
+        while ($this->findBySubdomain($subdomain)) {
+            $subdomain = $originalSubdomain . '-' . $counter;
+            $counter++;
+        }
+        
+        return $subdomain;
     }
     
     public function update($id, $data) {

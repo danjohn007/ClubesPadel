@@ -4,12 +4,13 @@ if (!defined('APP_PATH')) {
     require_once __DIR__ . '/../../../config/config.php';
 }
 require_once APP_PATH . '/Views/layouts/header.php'; 
+require_once APP_PATH . '/Views/layouts/sidebar.php';
 ?>
 
 <div class="container-fluid">
     <div class="row">
         <!-- SuperAdmin Sidebar -->
-        <div class="col-md-3 col-lg-2 p-0">
+        <!-- Sidebar moved to overlay -->
             <div class="sidebar p-3">
                 <div class="mb-4">
                     <h5 class="text-white"><i class="bi bi-shield-check"></i> SuperAdmin</h5>
@@ -39,7 +40,7 @@ require_once APP_PATH . '/Views/layouts/header.php';
         </div>
         
         <!-- Main Content -->
-        <div class="col-md-9 col-lg-10 p-4">
+        <div class="col-12 p-4">
             <h2 class="mb-4">Dashboard SuperAdmin</h2>
             
             <!-- Stats Cards -->

@@ -76,11 +76,14 @@ require_once APP_PATH . '/Views/layouts/header.php';
                         </div>
                         
                         <div class="mb-3">
-                            <label for="phone" class="form-label">Teléfono</label>
+                            <label for="phone" class="form-label">Teléfono *</label>
                             <div class="input-group">
                                 <span class="input-group-text"><i class="bi bi-telephone"></i></span>
-                                <input type="tel" class="form-control" id="phone" name="phone">
+                                <input type="tel" class="form-control" id="phone" name="phone" 
+                                       pattern="[0-9]{10}" maxlength="10" required
+                                       placeholder="10 dígitos">
                             </div>
+                            <small class="text-muted">Debe tener exactamente 10 dígitos</small>
                         </div>
                         
                         <div class="mb-3">
@@ -117,6 +120,16 @@ require_once APP_PATH . '/Views/layouts/header.php';
                                        placeholder="Escribe el resultado" required>
                             </div>
                             <small class="text-muted">Resuelve la suma para continuar</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="terms" name="terms" required>
+                                <label class="form-check-label" for="terms">
+                                    Acepto los <a href="<?php echo URL_BASE; ?>/terms" target="_blank">Términos y Condiciones</a> 
+                                    y la <a href="<?php echo URL_BASE; ?>/privacy" target="_blank">Política de Privacidad</a> *
+                                </label>
+                            </div>
                         </div>
                         
                         <button type="submit" class="btn btn-primary w-100 py-2">
