@@ -74,7 +74,7 @@ class TournamentsController extends Controller {
         $this->view('tournaments/create', $data);
     }
     
-    public function view($id) {
+    public function viewTournament($id) {
         $this->requireAuth();
         
         $clubId = $this->getClubId();

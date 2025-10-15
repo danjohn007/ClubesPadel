@@ -94,7 +94,7 @@ require_once APP_PATH . '/Views/layouts/header.php';
                                     </div>
                                     
                                     <div class="d-grid gap-2">
-                                        <a href="<?php echo URL_BASE; ?>/tournaments/view/<?php echo $tournament['id']; ?>" 
+                                        <a href="<?php echo URL_BASE; ?>/tournaments/viewTournament/<?php echo $tournament['id']; ?>" 
                                            class="btn btn-primary btn-sm">
                                             <i class="bi bi-eye"></i> Ver Detalles
                                         </a>

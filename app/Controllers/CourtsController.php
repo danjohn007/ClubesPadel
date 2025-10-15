@@ -135,7 +135,7 @@ class CourtsController extends Controller {
         }
     }
     
-    public function view($id) {
+    public function viewCourt($id) {
         $this->requireAuth();
         
         $clubId = $this->getClubId();
