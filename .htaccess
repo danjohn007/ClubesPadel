@@ -5,7 +5,11 @@
     RewriteEngine On
     
     # Set base directory automatically
-    RewriteBase /
+    # RewriteBase should be set to the subdirectory where the app is installed
+    # For root installation: RewriteBase /
+    # For subdirectory: RewriteBase /subdirectory/
+    # Leave commented to auto-detect
+    # RewriteBase /
     
     # Redirect to HTTPS (uncomment in production)
     # RewriteCond %{HTTPS} off

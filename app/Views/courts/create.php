@@ -1,4 +1,10 @@
-<?php require_once APP_PATH . '/Views/layouts/header.php'; ?>
+<?php 
+// Ensure configuration is loaded
+if (!defined('APP_PATH')) {
+    require_once __DIR__ . '/../../../config/config.php';
+}
+require_once APP_PATH . '/Views/layouts/header.php'; 
+?>
 
 <div class="container-fluid">
     <div class="row">
