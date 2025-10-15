@@ -82,16 +82,23 @@ class AuthController extends Controller {
             $firstName = $_POST['first_name'] ?? '';
             $lastName = $_POST['last_name'] ?? '';
             $phone = $_POST['phone'] ?? '';
+            $userType = $_POST['user_type'] ?? 'player';
+            $clubName = $_POST['club_name'] ?? '';
+            $captcha = $_POST['captcha'] ?? '';
             
             // Validation
             if (empty($email) || empty($password) || empty($firstName) || empty($lastName)) {
                 $data['error'] = 'Todos los campos obligatorios deben ser completados';
+            } elseif ($userType === 'club' && empty($clubName)) {
+                $data['error'] = 'El nombre del club es obligatorio';
             } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 $data['error'] = 'Email inválido';
             } elseif (strlen($password) < PASSWORD_MIN_LENGTH) {
                 $data['error'] = 'La contraseña debe tener al menos ' . PASSWORD_MIN_LENGTH . ' caracteres';
             } elseif ($password !== $confirmPassword) {
                 $data['error'] = 'Las contraseñas no coinciden';
+            } elseif (empty($captcha) || !isset($_SESSION['captcha_answer']) || intval($captcha) !== intval($_SESSION['captcha_answer'])) {
+                $data['error'] = 'Respuesta de verificación incorrecta';
             } else {
                 $userModel = $this->model('User');
                 
@@ -99,6 +106,26 @@ class AuthController extends Controller {
                 if ($userModel->findByEmail($email)) {
                     $data['error'] = 'Este email ya está registrado';
                 } else {
+                    // If user type is club, create the club first
+                    $clubId = null;
+                    if ($userType === 'club') {
+                        $clubModel = $this->model('Club');
+                        $clubData = [
+                            'name' => $clubName,
+                            'email' => $email,
+                            'phone' => $phone,
+                            'is_active' => 1,
+                            'subscription_plan_id' => 1 // Default to basic plan
+                        ];
+                        $clubId = $clubModel->create($clubData);
+                        
+                        if (!$clubId) {
+                            $data['error'] = 'Error al crear el club. Por favor intenta nuevamente.';
+                            $this->view('auth/register', $data);
+                            return;
+                        }
+                    }
+                    
                     // Create user
                     $userData = [
                         'email' => $email,
@@ -106,7 +133,8 @@ class AuthController extends Controller {
                         'first_name' => $firstName,
                         'last_name' => $lastName,
                         'phone' => $phone,
-                        'role' => 'player'
+                        'role' => $userType === 'club' ? 'admin' : 'player',
+                        'club_id' => $clubId
                     ];
                     
                     $userId = $userModel->create($userData);
@@ -118,6 +146,9 @@ class AuthController extends Controller {
                     }
                 }
             }
+            
+            // Clear captcha answer
+            unset($_SESSION['captcha_answer']);
         }
         
         $this->view('auth/register', $data);
