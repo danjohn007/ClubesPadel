@@ -83,10 +83,60 @@ class SuperadminController extends Controller {
         $clubModel = $this->model('Club');
         $clubs = $clubModel->getAll();
         
+        // Get subscription plans for dropdown
+        $sql = "SELECT * FROM subscription_plans WHERE is_active = 1 ORDER BY name";
+        $plans = $this->getDb()->fetchAll($sql);
+        
         $data = [
             'title' => 'Gestión de Clubes',
-            'clubs' => $clubs
+            'clubs' => $clubs,
+            'plans' => $plans,
+            'error' => '',
+            'success' => ''
         ];
+        
+        // Handle form submission
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+            if ($_POST['action'] === 'create') {
+                $clubData = [
+                    'name' => $_POST['name'] ?? '',
+                    'email' => $_POST['email'] ?? '',
+                    'phone' => $_POST['phone'] ?? '',
+                    'address' => $_POST['address'] ?? '',
+                    'city' => $_POST['city'] ?? '',
+                    'state' => $_POST['state'] ?? '',
+                    'country' => $_POST['country'] ?? 'México',
+                    'subdomain' => $_POST['subdomain'] ?? '',
+                    'subscription_plan_id' => $_POST['subscription_plan_id'] ?? 1,
+                    'is_active' => 1
+                ];
+                
+                if ($clubModel->create($clubData)) {
+                    $data['success'] = 'Club creado exitosamente';
+                    $clubs = $clubModel->getAll();
+                    $data['clubs'] = $clubs;
+                } else {
+                    $data['error'] = 'Error al crear el club';
+                }
+            } elseif ($_POST['action'] === 'edit' && isset($_POST['club_id'])) {
+                $clubData = [
+                    'name' => $_POST['name'] ?? '',
+                    'email' => $_POST['email'] ?? '',
+                    'phone' => $_POST['phone'] ?? '',
+                    'address' => $_POST['address'] ?? '',
+                    'city' => $_POST['city'] ?? '',
+                    'state' => $_POST['state'] ?? ''
+                ];
+                
+                if ($clubModel->update($_POST['club_id'], $clubData)) {
+                    $data['success'] = 'Club actualizado exitosamente';
+                    $clubs = $clubModel->getAll();
+                    $data['clubs'] = $clubs;
+                } else {
+                    $data['error'] = 'Error al actualizar el club';
+                }
+            }
+        }
         
         $this->view('superadmin/clubs', $data);
     }
@@ -94,13 +144,41 @@ class SuperadminController extends Controller {
     public function plans() {
         $this->requireRole('superadmin');
         
-        $sql = "SELECT * FROM subscription_plans ORDER BY price_monthly ASC";
-        $plans = $this->getDb()->fetchAll($sql);
+        $planModel = $this->model('SubscriptionPlan');
+        $plans = $planModel->getAll();
         
         $data = [
             'title' => 'Planes de Suscripción',
-            'plans' => $plans
+            'plans' => $plans,
+            'error' => '',
+            'success' => ''
         ];
+        
+        // Handle form submission
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+            if ($_POST['action'] === 'edit' && isset($_POST['plan_id'])) {
+                $planData = [
+                    'name' => $_POST['name'] ?? '',
+                    'description' => $_POST['description'] ?? '',
+                    'price_monthly' => $_POST['price_monthly'] ?? 0,
+                    'price_yearly' => $_POST['price_yearly'] ?? 0,
+                    'max_users' => $_POST['max_users'] ?? null,
+                    'max_courts' => $_POST['max_courts'] ?? null,
+                    'max_tournaments' => $_POST['max_tournaments'] ?? null,
+                    'max_storage_mb' => $_POST['max_storage_mb'] ?? null,
+                    'features' => $_POST['features'] ?? '',
+                    'is_active' => isset($_POST['is_active']) ? 1 : 0
+                ];
+                
+                if ($planModel->update($_POST['plan_id'], $planData)) {
+                    $data['success'] = 'Plan actualizado exitosamente';
+                    $plans = $planModel->getAll();
+                    $data['plans'] = $plans;
+                } else {
+                    $data['error'] = 'Error al actualizar el plan';
+                }
+            }
+        }
         
         $this->view('superadmin/plans', $data);
     }
@@ -108,17 +186,46 @@ class SuperadminController extends Controller {
     public function payments() {
         $this->requireRole('superadmin');
         
-        $sql = "SELECT cp.*, c.name as club_name 
-                FROM club_payments cp
-                JOIN clubs c ON cp.club_id = c.id
-                ORDER BY cp.created_at DESC
-                LIMIT 50";
-        $payments = $this->getDb()->fetchAll($sql);
+        $paymentModel = $this->model('ClubPayment');
+        $payments = $paymentModel->getAll();
+        
+        // Get clubs for dropdown
+        $clubModel = $this->model('Club');
+        $clubs = $clubModel->getAll();
         
         $data = [
             'title' => 'Pagos de Clubes',
-            'payments' => $payments
+            'payments' => $payments,
+            'clubs' => $clubs,
+            'error' => '',
+            'success' => ''
         ];
+        
+        // Handle form submission
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+            if ($_POST['action'] === 'create') {
+                $paymentData = [
+                    'club_id' => $_POST['club_id'] ?? '',
+                    'amount' => $_POST['amount'] ?? 0,
+                    'currency' => $_POST['currency'] ?? 'MXN',
+                    'payment_method' => $_POST['payment_method'] ?? '',
+                    'transaction_id' => $_POST['transaction_id'] ?? '',
+                    'status' => $_POST['status'] ?? 'completed',
+                    'payment_date' => $_POST['payment_date'] ?? date('Y-m-d H:i:s'),
+                    'period_start' => $_POST['period_start'] ?? null,
+                    'period_end' => $_POST['period_end'] ?? null,
+                    'notes' => $_POST['notes'] ?? ''
+                ];
+                
+                if ($paymentModel->create($paymentData)) {
+                    $data['success'] = 'Pago registrado exitosamente';
+                    $payments = $paymentModel->getAll();
+                    $data['payments'] = $payments;
+                } else {
+                    $data['error'] = 'Error al registrar el pago';
+                }
+            }
+        }
         
         $this->view('superadmin/payments', $data);
     }
