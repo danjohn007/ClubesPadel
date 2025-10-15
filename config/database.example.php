@@ -6,9 +6,9 @@
  */
 
 define('DB_HOST', 'localhost');
-define('DB_NAME', 'clubespadel');
-define('DB_USER', 'root');
-define('DB_PASS', '');
+define('DB_NAME', 'arosport_admin');
+define('DB_USER', 'arosport_admin');
+define('DB_PASS', 'Danjohn007!');
 define('DB_CHARSET', 'utf8mb4');
 
 // Database connection settings
