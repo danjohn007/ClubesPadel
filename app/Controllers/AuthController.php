@@ -136,6 +136,6 @@ class AuthController extends Controller {
             $_SERVER['HTTP_USER_AGENT'] ?? null
         ];
         
-        $this->db->query($sql, $params);
+        $this->getDb()->query($sql, $params);
     }
 }
