@@ -85,10 +85,17 @@ class AuthController extends Controller {
             $userType = $_POST['user_type'] ?? 'player';
             $clubName = $_POST['club_name'] ?? '';
             $captcha = $_POST['captcha'] ?? '';
+            $termsAccepted = isset($_POST['terms_accepted']);
             
             // Validation
             if (empty($email) || empty($password) || empty($firstName) || empty($lastName)) {
                 $data['error'] = 'Todos los campos obligatorios deben ser completados';
+            } elseif (empty($phone)) {
+                $data['error'] = 'El teléfono es obligatorio';
+            } elseif (!preg_match('/^[0-9]{10}$/', $phone)) {
+                $data['error'] = 'El teléfono debe tener exactamente 10 dígitos';
+            } elseif (!$termsAccepted) {
+                $data['error'] = 'Debes aceptar los términos y condiciones';
             } elseif ($userType === 'club' && empty($clubName)) {
                 $data['error'] = 'El nombre del club es obligatorio';
             } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {

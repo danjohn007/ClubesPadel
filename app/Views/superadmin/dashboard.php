@@ -101,6 +101,56 @@ require_once APP_PATH . '/Views/layouts/header.php';
                 </div>
             </div>
             
+            <!-- Charts -->
+            <div class="row mt-4">
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-graph-up"></i> Crecimiento de Clubes</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="clubsGrowthChart" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-pie-chart"></i> Distribución por Plan</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="plansDistributionChart" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Additional Charts -->
+            <div class="row mt-4">
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-currency-dollar"></i> Ingresos Mensuales</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="revenueChart" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-activity"></i> Estado de Suscripciones</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="subscriptionStatusChart" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
             <!-- Recent Clubs -->
             <div class="card mt-4">
                 <div class="card-header">
@@ -163,31 +213,6 @@ require_once APP_PATH . '/Views/layouts/header.php';
                             No hay clubes registrados
                         </p>
                     <?php endif; ?>
-                </div>
-            </div>
-            
-            <!-- Charts -->
-            <div class="row mt-4">
-                <div class="col-lg-6">
-                    <div class="card">
-                        <div class="card-header">
-                            <h5 class="mb-0"><i class="bi bi-graph-up"></i> Crecimiento de Clubes</h5>
-                        </div>
-                        <div class="card-body">
-                            <canvas id="clubsGrowthChart" height="200"></canvas>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="col-lg-6">
-                    <div class="card">
-                        <div class="card-header">
-                            <h5 class="mb-0"><i class="bi bi-pie-chart"></i> Distribución por Plan</h5>
-                        </div>
-                        <div class="card-body">
-                            <canvas id="plansDistributionChart" height="200"></canvas>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -299,6 +324,133 @@ document.addEventListener('DOMContentLoaded', function() {
                                 const total = context.dataset.data.reduce((a, b) => a + b, 0);
                                 const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
                                 return label + ': ' + value + ' (' + percentage + '%)';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Revenue Chart
+    const ctxRevenue = document.getElementById('revenueChart');
+    if (ctxRevenue) {
+        <?php 
+        // Prepare revenue data for JavaScript
+        $revenueLabels = [];
+        $revenueChartData = [];
+        if (!empty($revenue_data)) {
+            foreach ($revenue_data as $row) {
+                $revenueLabels[] = $row['month_name'];
+                $revenueChartData[] = (float)$row['total'];
+            }
+        }
+        if (empty($revenueLabels)) {
+            $revenueLabels = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'];
+            $revenueChartData = [0, 0, 0, 0, 0, 0];
+        }
+        ?>
+        new Chart(ctxRevenue, {
+            type: 'bar',
+            data: {
+                labels: <?php echo json_encode($revenueLabels); ?>,
+                datasets: [{
+                    label: 'Ingresos ($)',
+                    data: <?php echo json_encode($revenueChartData); ?>,
+                    backgroundColor: 'rgba(67, 233, 123, 0.7)',
+                    borderColor: '#43e97b',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return 'Ingresos: $' + context.parsed.y.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value.toLocaleString();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Subscription Status Chart
+    const ctxSubscription = document.getElementById('subscriptionStatusChart');
+    if (ctxSubscription) {
+        <?php 
+        // Prepare subscription status data for JavaScript
+        $subscriptionLabels = [];
+        $subscriptionData = [];
+        $statusLabels = [
+            'trial' => 'Período de prueba',
+            'active' => 'Activo',
+            'suspended' => 'Suspendido',
+            'cancelled' => 'Cancelado'
+        ];
+        if (!empty($subscription_status)) {
+            foreach ($subscription_status as $row) {
+                $subscriptionLabels[] = $statusLabels[$row['subscription_status']] ?? $row['subscription_status'];
+                $subscriptionData[] = (int)$row['count'];
+            }
+        }
+        if (empty($subscriptionLabels)) {
+            $subscriptionLabels = ['Período de prueba', 'Activo', 'Suspendido'];
+            $subscriptionData = [0, 0, 0];
+        }
+        ?>
+        new Chart(ctxSubscription, {
+            type: 'polarArea',
+            data: {
+                labels: <?php echo json_encode($subscriptionLabels); ?>,
+                datasets: [{
+                    data: <?php echo json_encode($subscriptionData); ?>,
+                    backgroundColor: [
+                        'rgba(102, 126, 234, 0.7)',
+                        'rgba(67, 233, 123, 0.7)',
+                        'rgba(240, 147, 251, 0.7)',
+                        'rgba(220, 53, 69, 0.7)'
+                    ],
+                    borderColor: [
+                        '#667eea',
+                        '#43e97b',
+                        '#f093fb',
+                        '#dc3545'
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'bottom'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed.r || 0;
+                                return label + ': ' + value + ' clubes';
                             }
                         }
                     }

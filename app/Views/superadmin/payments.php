@@ -40,7 +40,26 @@ require_once APP_PATH . '/Views/layouts/header.php';
         
         <!-- Main Content -->
         <div class="col-md-9 col-lg-10 p-4">
-            <h2 class="mb-4"><i class="bi bi-credit-card"></i> Pagos de Clubes</h2>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-credit-card"></i> Pagos de Clubes</h2>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createPaymentModal">
+                    <i class="bi bi-plus-circle"></i> Registrar Pago
+                </button>
+            </div>
+            
+            <?php if (!empty($error)): ?>
+                <div class="alert alert-danger alert-dismissible fade show">
+                    <i class="bi bi-exclamation-triangle"></i> <?php echo $error; ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            <?php endif; ?>
+            
+            <?php if (!empty($success)): ?>
+                <div class="alert alert-success alert-dismissible fade show">
+                    <i class="bi bi-check-circle"></i> <?php echo $success; ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            <?php endif; ?>
             
             <div class="card">
                 <div class="card-body">
@@ -110,6 +129,104 @@ require_once APP_PATH . '/Views/layouts/header.php';
                     <?php endif; ?>
                 </div>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Payment Modal -->
+<div class="modal fade" id="createPaymentModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="POST" action="<?php echo URL_BASE; ?>/superadmin/payments">
+                <input type="hidden" name="action" value="create">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-credit-card"></i> Registrar Nuevo Pago</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Club *</label>
+                        <select class="form-select" name="club_id" required>
+                            <option value="">Seleccionar club...</option>
+                            <?php if (!empty($clubs)): ?>
+                                <?php foreach ($clubs as $club): ?>
+                                    <option value="<?php echo $club['id']; ?>">
+                                        <?php echo htmlspecialchars($club['name']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Monto *</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" name="amount" step="0.01" min="0" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Moneda</label>
+                            <select class="form-select" name="currency">
+                                <option value="MXN">MXN - Peso Mexicano</option>
+                                <option value="USD">USD - Dólar</option>
+                                <option value="EUR">EUR - Euro</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Método de Pago</label>
+                            <select class="form-select" name="payment_method">
+                                <option value="">Seleccionar...</option>
+                                <option value="credit_card">Tarjeta de Crédito</option>
+                                <option value="debit_card">Tarjeta de Débito</option>
+                                <option value="bank_transfer">Transferencia Bancaria</option>
+                                <option value="cash">Efectivo</option>
+                                <option value="paypal">PayPal</option>
+                                <option value="other">Otro</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Estado</label>
+                            <select class="form-select" name="status">
+                                <option value="completed">Completado</option>
+                                <option value="pending">Pendiente</option>
+                                <option value="failed">Fallido</option>
+                                <option value="refunded">Reembolsado</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">ID de Transacción</label>
+                        <input type="text" class="form-control" name="transaction_id" placeholder="Referencia o ID de transacción">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Fecha de Pago</label>
+                            <input type="date" class="form-control" name="payment_date" value="<?php echo date('Y-m-d'); ?>">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Inicio del Período</label>
+                            <input type="date" class="form-control" name="period_start">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Fin del Período</label>
+                            <input type="date" class="form-control" name="period_end">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Notas</label>
+                        <textarea class="form-control" name="notes" rows="3" placeholder="Notas adicionales sobre el pago"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> Registrar Pago
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
