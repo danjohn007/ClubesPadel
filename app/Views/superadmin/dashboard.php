@@ -189,26 +189,61 @@
 </div>
 
 <script>
-// Sample charts data
+// Real data charts from database
 document.addEventListener('DOMContentLoaded', function() {
     // Clubs Growth Chart
     const ctxGrowth = document.getElementById('clubsGrowthChart');
     if (ctxGrowth) {
+        <?php 
+        // Prepare data for JavaScript
+        $growthLabels = [];
+        $growthData = [];
+        if (!empty($clubs_growth)) {
+            foreach ($clubs_growth as $row) {
+                $growthLabels[] = $row['month_name'];
+                $growthData[] = (int)$row['count'];
+            }
+        }
+        // Fill in missing months if needed
+        if (empty($growthLabels)) {
+            $growthLabels = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'];
+            $growthData = [0, 0, 0, 0, 0, 0];
+        }
+        ?>
         new Chart(ctxGrowth, {
             type: 'line',
             data: {
-                labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
+                labels: <?php echo json_encode($growthLabels); ?>,
                 datasets: [{
                     label: 'Nuevos Clubes',
-                    data: [2, 3, 5, 8, 12, 15],
+                    data: <?php echo json_encode($growthData); ?>,
                     borderColor: '#667eea',
                     backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                    tension: 0.4
+                    tension: 0.4,
+                    fill: true
                 }]
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
             }
         });
     }
@@ -216,18 +251,52 @@ document.addEventListener('DOMContentLoaded', function() {
     // Plans Distribution Chart
     const ctxPlans = document.getElementById('plansDistributionChart');
     if (ctxPlans) {
+        <?php 
+        // Prepare data for JavaScript
+        $planLabels = [];
+        $planData = [];
+        if (!empty($plans_distribution)) {
+            foreach ($plans_distribution as $row) {
+                $planLabels[] = $row['name'];
+                $planData[] = (int)$row['count'];
+            }
+        }
+        if (empty($planLabels)) {
+            $planLabels = ['Básico', 'Profesional', 'Premium'];
+            $planData = [0, 0, 0];
+        }
+        ?>
         new Chart(ctxPlans, {
             type: 'doughnut',
             data: {
-                labels: ['Básico', 'Profesional', 'Premium'],
+                labels: <?php echo json_encode($planLabels); ?>,
                 datasets: [{
-                    data: [5, 8, 3],
-                    backgroundColor: ['#667eea', '#f093fb', '#43e97b']
+                    data: <?php echo json_encode($planData); ?>,
+                    backgroundColor: ['#667eea', '#f093fb', '#43e97b'],
+                    borderWidth: 2,
+                    borderColor: '#fff'
                 }]
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'bottom'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                                return label + ': ' + value + ' (' + percentage + '%)';
+                            }
+                        }
+                    }
+                }
             }
         });
     }

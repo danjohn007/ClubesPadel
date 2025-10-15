@@ -21,11 +21,35 @@ class SuperadminController extends Controller {
         $result = $this->getDb()->fetchOne($sql);
         $monthlyRevenue = $result['total'] ?? 0;
         
+        // Get clubs growth data for last 6 months
+        $sql = "SELECT 
+                    DATE_FORMAT(created_at, '%Y-%m') as month,
+                    DATE_FORMAT(created_at, '%b') as month_name,
+                    COUNT(*) as count
+                FROM clubs 
+                WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+                GROUP BY DATE_FORMAT(created_at, '%Y-%m'), DATE_FORMAT(created_at, '%b')
+                ORDER BY month ASC";
+        $clubsGrowth = $this->getDb()->fetchAll($sql);
+        
+        // Get plans distribution
+        $sql = "SELECT 
+                    sp.name,
+                    COUNT(c.id) as count
+                FROM clubs c
+                JOIN subscription_plans sp ON c.subscription_plan_id = sp.id
+                WHERE c.is_active = 1
+                GROUP BY sp.id, sp.name
+                ORDER BY sp.id ASC";
+        $plansDistribution = $this->getDb()->fetchAll($sql);
+        
         $data = [
             'title' => 'SuperAdmin Dashboard',
             'stats' => $stats,
             'recent_clubs' => $recentClubs,
-            'monthly_revenue' => $monthlyRevenue
+            'monthly_revenue' => $monthlyRevenue,
+            'clubs_growth' => $clubsGrowth,
+            'plans_distribution' => $plansDistribution
         ];
         
         $this->view('superadmin/dashboard', $data);

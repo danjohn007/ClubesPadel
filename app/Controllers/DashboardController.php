@@ -60,6 +60,39 @@ class DashboardController extends Controller {
                 LIMIT 5";
         $stats['recent_reservations'] = $this->getDb()->fetchAll($sql, [$clubId]);
         
+        // Income vs Expenses for last 6 months (for chart)
+        $sql = "SELECT 
+                    DATE_FORMAT(transaction_date, '%b') as month,
+                    COALESCE(SUM(amount), 0) as total
+                FROM income_transactions 
+                WHERE club_id = ? AND transaction_date >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+                GROUP BY DATE_FORMAT(transaction_date, '%Y-%m'), DATE_FORMAT(transaction_date, '%b')
+                ORDER BY DATE_FORMAT(transaction_date, '%Y-%m') ASC";
+        $stats['income_by_month'] = $this->getDb()->fetchAll($sql, [$clubId]);
+        
+        $sql = "SELECT 
+                    DATE_FORMAT(transaction_date, '%b') as month,
+                    COALESCE(SUM(amount), 0) as total
+                FROM expense_transactions 
+                WHERE club_id = ? AND transaction_date >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+                GROUP BY DATE_FORMAT(transaction_date, '%Y-%m'), DATE_FORMAT(transaction_date, '%b')
+                ORDER BY DATE_FORMAT(transaction_date, '%Y-%m') ASC";
+        $stats['expenses_by_month'] = $this->getDb()->fetchAll($sql, [$clubId]);
+        
+        // Reservations by court (for chart)
+        $sql = "SELECT 
+                    c.name,
+                    COUNT(r.id) as count
+                FROM courts c
+                LEFT JOIN reservations r ON c.id = r.court_id 
+                    AND r.club_id = ? 
+                    AND r.reservation_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+                WHERE c.club_id = ?
+                GROUP BY c.id, c.name
+                ORDER BY count DESC
+                LIMIT 8";
+        $stats['reservations_by_court'] = $this->getDb()->fetchAll($sql, [$clubId, $clubId]);
+        
         return $stats;
     }
 }
