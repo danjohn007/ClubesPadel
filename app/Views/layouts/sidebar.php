@@ -32,6 +32,14 @@
             <a class="nav-link" href="<?php echo URL_BASE; ?>/finances">
                 <i class="bi bi-cash-coin"></i> Finanzas
             </a>
+            
+            <a class="nav-link" href="<?php echo URL_BASE; ?>/reports">
+                <i class="bi bi-file-earmark-bar-graph"></i> Reportes
+            </a>
+            
+            <a class="nav-link" href="<?php echo URL_BASE; ?>/budget">
+                <i class="bi bi-calculator"></i> Presupuesto
+            </a>
             <?php endif; ?>
         </div>
         <?php endif; ?>
@@ -46,6 +54,22 @@
         
         <?php if (isset($_SESSION['user_role']) && in_array($_SESSION['user_role'], ['admin', 'superadmin'])): ?>
         <div class="nav-section mt-3">
+            <small class="text-uppercase text-muted px-3">Administración</small>
+            
+            <a class="nav-link" href="<?php echo URL_BASE; ?>/menu">
+                <i class="bi bi-card-list"></i> Menú
+            </a>
+            
+            <a class="nav-link" href="<?php echo URL_BASE; ?>/orders">
+                <i class="bi bi-receipt"></i> Pedidos
+            </a>
+            
+            <a class="nav-link" href="<?php echo URL_BASE; ?>/cashregister">
+                <i class="bi bi-cash-stack"></i> Corte de Caja
+            </a>
+        </div>
+        
+        <div class="nav-section mt-3">
             <small class="text-uppercase text-muted px-3">Comunicación</small>
             
             <a class="nav-link" href="<?php echo URL_BASE; ?>/notifications">
@@ -58,10 +82,6 @@
             
             <a class="nav-link" href="<?php echo URL_BASE; ?>/settings">
                 <i class="bi bi-gear"></i> Ajustes
-            </a>
-            
-            <a class="nav-link" href="<?php echo URL_BASE; ?>/reports">
-                <i class="bi bi-file-earmark-bar-graph"></i> Reportes
             </a>
         </div>
         <?php endif; ?>

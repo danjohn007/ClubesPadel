@@ -4,15 +4,14 @@ if (!defined('APP_PATH')) {
     require_once __DIR__ . '/../../../config/config.php';
 }
 require_once APP_PATH . '/Views/layouts/header.php'; 
+require_once APP_PATH . '/Views/layouts/sidebar.php'; 
 ?>
 
 <div class="container-fluid">
     <div class="row">
-        <div class="col-md-3 col-lg-2 p-0">
-            <?php require_once APP_PATH . '/Views/layouts/sidebar.php'; ?>
-        </div>
         
-        <div class="col-md-9 col-lg-10 p-4">
+        
+        <div class="col-12 p-4">
             <div class="mb-4">
                 <a href="<?php echo URL_BASE; ?>/courts" class="btn btn-outline-secondary btn-sm">
                     <i class="bi bi-arrow-left"></i> Volver

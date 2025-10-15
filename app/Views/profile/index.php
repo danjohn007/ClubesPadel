@@ -4,15 +4,14 @@ if (!defined('APP_PATH')) {
     require_once __DIR__ . '/../../../config/config.php';
 }
 require_once APP_PATH . '/Views/layouts/header.php'; 
+require_once APP_PATH . '/Views/layouts/sidebar.php'; 
 ?>
 
 <div class="container-fluid">
     <div class="row">
-        <div class="col-md-3 col-lg-2 p-0">
-            <?php require_once APP_PATH . '/Views/layouts/sidebar.php'; ?>
-        </div>
         
-        <div class="col-md-9 col-lg-10 p-4">
+        
+        <div class="col-12 p-4">
             <h2 class="mb-4"><i class="bi bi-person-circle"></i> Mi Perfil</h2>
             
             <?php if (!empty($error)): ?>

@@ -4,11 +4,12 @@ if (!defined('APP_PATH')) {
     require_once __DIR__ . '/../../../config/config.php';
 }
 require_once APP_PATH . '/Views/layouts/header.php'; 
+require_once APP_PATH . '/Views/layouts/sidebar.php';
 ?>
 
 <div class="container-fluid">
     <div class="row">
-        <div class="col-md-3 col-lg-2 p-0">
+        <!-- Sidebar moved to overlay -->
             <div class="sidebar p-3">
                 <div class="mb-4">
                     <h5 class="text-white"><i class="bi bi-shield-check"></i> SuperAdmin</h5>
@@ -30,7 +31,7 @@ require_once APP_PATH . '/Views/layouts/header.php';
             </div>
         </div>
         
-        <div class="col-md-9 col-lg-10 p-4">
+        <div class="col-12 p-4">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h2><i class="bi bi-building"></i> Gestión de Clubes</h2>
                 <button class="btn btn-primary">
