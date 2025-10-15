@@ -43,13 +43,35 @@ class SuperadminController extends Controller {
                 ORDER BY sp.id ASC";
         $plansDistribution = $this->getDb()->fetchAll($sql);
         
+        // Get revenue data for last 6 months
+        $sql = "SELECT 
+                    DATE_FORMAT(payment_date, '%b') as month_name,
+                    SUM(amount) as total
+                FROM club_payments 
+                WHERE status = 'completed'
+                AND payment_date >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+                GROUP BY DATE_FORMAT(payment_date, '%Y-%m'), DATE_FORMAT(payment_date, '%b')
+                ORDER BY DATE_FORMAT(payment_date, '%Y-%m') ASC";
+        $revenueData = $this->getDb()->fetchAll($sql);
+        
+        // Get subscription status data
+        $sql = "SELECT 
+                    subscription_status,
+                    COUNT(*) as count
+                FROM clubs 
+                WHERE is_active = 1
+                GROUP BY subscription_status";
+        $subscriptionStatus = $this->getDb()->fetchAll($sql);
+        
         $data = [
             'title' => 'SuperAdmin Dashboard',
             'stats' => $stats,
             'recent_clubs' => $recentClubs,
             'monthly_revenue' => $monthlyRevenue,
             'clubs_growth' => $clubsGrowth,
-            'plans_distribution' => $plansDistribution
+            'plans_distribution' => $plansDistribution,
+            'revenue_data' => $revenueData,
+            'subscription_status' => $subscriptionStatus
         ];
         
         $this->view('superadmin/dashboard', $data);
