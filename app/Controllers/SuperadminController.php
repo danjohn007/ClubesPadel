@@ -13,12 +13,12 @@ class SuperadminController extends Controller {
         
         // Get recent clubs
         $sql = "SELECT * FROM clubs ORDER BY created_at DESC LIMIT 10";
-        $recentClubs = $this->db->fetchAll($sql);
+        $recentClubs = $this->getDb()->fetchAll($sql);
         
         // Get revenue this month
         $sql = "SELECT COALESCE(SUM(amount), 0) as total FROM club_payments 
                 WHERE MONTH(payment_date) = MONTH(CURDATE()) AND status = 'completed'";
-        $result = $this->db->fetchOne($sql);
+        $result = $this->getDb()->fetchOne($sql);
         $monthlyRevenue = $result['total'] ?? 0;
         
         $data = [
@@ -49,7 +49,7 @@ class SuperadminController extends Controller {
         $this->requireRole('superadmin');
         
         $sql = "SELECT * FROM subscription_plans ORDER BY price_monthly ASC";
-        $plans = $this->db->fetchAll($sql);
+        $plans = $this->getDb()->fetchAll($sql);
         
         $data = [
             'title' => 'Planes de Suscripción',
@@ -67,7 +67,7 @@ class SuperadminController extends Controller {
                 JOIN clubs c ON cp.club_id = c.id
                 ORDER BY cp.created_at DESC
                 LIMIT 50";
-        $payments = $this->db->fetchAll($sql);
+        $payments = $this->getDb()->fetchAll($sql);
         
         $data = [
             'title' => 'Pagos de Clubes',

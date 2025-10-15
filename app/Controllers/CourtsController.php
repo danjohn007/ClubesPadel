@@ -153,7 +153,7 @@ class CourtsController extends Controller {
                 WHERE r.court_id = ? AND r.club_id = ?
                 ORDER BY r.reservation_date DESC, r.start_time DESC
                 LIMIT 10";
-        $reservations = $this->db->fetchAll($sql, [$id, $clubId]);
+        $reservations = $this->getDb()->fetchAll($sql, [$id, $clubId]);
         
         $data = [
             'title' => 'Detalles de Cancha',

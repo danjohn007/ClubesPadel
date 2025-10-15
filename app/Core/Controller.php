@@ -9,7 +9,17 @@ class Controller {
     protected $db;
     
     public function __construct() {
-        $this->db = Database::getInstance();
+        // Database connection is now lazy-loaded when first accessed
+    }
+    
+    /**
+     * Get database instance (lazy loading)
+     */
+    protected function getDb() {
+        if ($this->db === null) {
+            $this->db = Database::getInstance();
+        }
+        return $this->db;
     }
     
     /**
