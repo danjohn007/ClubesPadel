@@ -181,7 +181,205 @@
                 </div>
             </div>
         </div>
+        
+        <!-- Charts Section -->
+        <div class="row mt-4">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-graph-up"></i> Ingresos vs Gastos (Últimos 6 Meses)</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="incomeExpensesChart" height="100"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Reservaciones por Cancha</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="courtReservationsChart" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+
+<script>
+// Dashboard charts with real data
+document.addEventListener('DOMContentLoaded', function() {
+    // Income vs Expenses Chart
+    const ctxIncome = document.getElementById('incomeExpensesChart');
+    if (ctxIncome) {
+        <?php 
+        // Prepare income data
+        $incomeLabels = [];
+        $incomeData = [];
+        $expenseData = [];
+        
+        // Get last 6 months
+        $months = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $date = date('Y-m', strtotime("-$i month"));
+            $monthName = date('M', strtotime("-$i month"));
+            $months[$date] = $monthName;
+            $incomeLabels[] = $monthName;
+            $incomeData[$date] = 0;
+            $expenseData[$date] = 0;
+        }
+        
+        // Fill income data
+        if (!empty($stats['income_by_month'])) {
+            foreach ($stats['income_by_month'] as $row) {
+                foreach ($months as $date => $name) {
+                    if ($row['month'] === $name) {
+                        $incomeData[$date] = (float)$row['total'];
+                    }
+                }
+            }
+        }
+        
+        // Fill expense data
+        if (!empty($stats['expenses_by_month'])) {
+            foreach ($stats['expenses_by_month'] as $row) {
+                foreach ($months as $date => $name) {
+                    if ($row['month'] === $name) {
+                        $expenseData[$date] = (float)$row['total'];
+                    }
+                }
+            }
+        }
+        
+        $incomeValues = array_values($incomeData);
+        $expenseValues = array_values($expenseData);
+        ?>
+        new Chart(ctxIncome, {
+            type: 'line',
+            data: {
+                labels: <?php echo json_encode($incomeLabels); ?>,
+                datasets: [{
+                    label: 'Ingresos',
+                    data: <?php echo json_encode($incomeValues); ?>,
+                    borderColor: '#43e97b',
+                    backgroundColor: 'rgba(67, 233, 123, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }, {
+                    label: 'Gastos',
+                    data: <?php echo json_encode($expenseValues); ?>,
+                    borderColor: '#f5576c',
+                    backgroundColor: 'rgba(245, 87, 108, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                label += '$' + context.parsed.y.toLocaleString('es-MX', {minimumFractionDigits: 2});
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value.toLocaleString('es-MX');
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Court Reservations Chart
+    const ctxCourts = document.getElementById('courtReservationsChart');
+    if (ctxCourts) {
+        <?php 
+        // Prepare court reservations data
+        $courtLabels = [];
+        $courtData = [];
+        if (!empty($stats['reservations_by_court'])) {
+            foreach ($stats['reservations_by_court'] as $row) {
+                $courtLabels[] = $row['name'];
+                $courtData[] = (int)$row['count'];
+            }
+        }
+        if (empty($courtLabels)) {
+            $courtLabels = ['Sin datos'];
+            $courtData = [0];
+        }
+        ?>
+        new Chart(ctxCourts, {
+            type: 'bar',
+            data: {
+                labels: <?php echo json_encode($courtLabels); ?>,
+                datasets: [{
+                    label: 'Reservaciones',
+                    data: <?php echo json_encode($courtData); ?>,
+                    backgroundColor: [
+                        '#667eea',
+                        '#f093fb',
+                        '#4facfe',
+                        '#43e97b',
+                        '#fa709a',
+                        '#feca57',
+                        '#48dbfb',
+                        '#ff9ff3'
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return 'Reservaciones: ' + context.parsed.x;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
 
 <?php require_once APP_PATH . '/Views/layouts/footer.php'; ?>
