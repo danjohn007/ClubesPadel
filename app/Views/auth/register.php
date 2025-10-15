@@ -76,11 +76,14 @@ require_once APP_PATH . '/Views/layouts/header.php';
                         </div>
                         
                         <div class="mb-3">
-                            <label for="phone" class="form-label">Teléfono</label>
+                            <label for="phone" class="form-label">Teléfono *</label>
                             <div class="input-group">
                                 <span class="input-group-text"><i class="bi bi-telephone"></i></span>
-                                <input type="tel" class="form-control" id="phone" name="phone">
+                                <input type="tel" class="form-control" id="phone" name="phone" 
+                                       pattern="[0-9]{10}" maxlength="10" 
+                                       placeholder="10 dígitos" required>
                             </div>
+                            <small class="text-muted">Ingresa 10 dígitos</small>
                         </div>
                         
                         <div class="mb-3">
@@ -98,6 +101,16 @@ require_once APP_PATH . '/Views/layouts/header.php';
                             <div class="input-group">
                                 <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
                                 <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="terms_accepted" 
+                                       name="terms_accepted" required>
+                                <label class="form-check-label" for="terms_accepted">
+                                    Acepto los <a href="<?php echo URL_BASE; ?>/terms" target="_blank">términos y condiciones</a> *
+                                </label>
                             </div>
                         </div>
                         
