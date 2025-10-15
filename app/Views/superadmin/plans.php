@@ -26,6 +26,12 @@ require_once APP_PATH . '/Views/layouts/header.php';
                     <a class="nav-link" href="<?php echo URL_BASE; ?>/superadmin/payments">
                         <i class="bi bi-credit-card"></i> Pagos
                     </a>
+                    <a class="nav-link" href="<?php echo URL_BASE; ?>/superadmin/reports">
+                        <i class="bi bi-graph-up"></i> Reportes
+                    </a>
+                    <a class="nav-link" href="<?php echo URL_BASE; ?>/superadmin/settings">
+                        <i class="bi bi-gear"></i> Configuración
+                    </a>
                 </nav>
             </div>
         </div>

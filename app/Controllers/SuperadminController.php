@@ -100,4 +100,94 @@ class SuperadminController extends Controller {
         
         $this->view('superadmin/payments', $data);
     }
+    
+    public function reports() {
+        $this->requireRole('superadmin');
+        
+        // Get revenue report
+        $sql = "SELECT 
+                    DATE_FORMAT(payment_date, '%Y-%m') as month,
+                    DATE_FORMAT(payment_date, '%b %Y') as month_name,
+                    SUM(amount) as total,
+                    COUNT(*) as count
+                FROM club_payments 
+                WHERE status = 'completed'
+                AND payment_date >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
+                GROUP BY DATE_FORMAT(payment_date, '%Y-%m'), DATE_FORMAT(payment_date, '%b %Y')
+                ORDER BY month ASC";
+        $revenueReport = $this->getDb()->fetchAll($sql);
+        
+        // Get club growth report
+        $sql = "SELECT 
+                    DATE_FORMAT(created_at, '%Y-%m') as month,
+                    DATE_FORMAT(created_at, '%b %Y') as month_name,
+                    COUNT(*) as new_clubs,
+                    SUM(COUNT(*)) OVER (ORDER BY DATE_FORMAT(created_at, '%Y-%m')) as total_clubs
+                FROM clubs 
+                WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
+                GROUP BY DATE_FORMAT(created_at, '%Y-%m'), DATE_FORMAT(created_at, '%b %Y')
+                ORDER BY month ASC";
+        $clubGrowthReport = $this->getDb()->fetchAll($sql);
+        
+        // Get subscription status report
+        $sql = "SELECT 
+                    subscription_status,
+                    COUNT(*) as count,
+                    ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM clubs), 2) as percentage
+                FROM clubs 
+                WHERE is_active = 1
+                GROUP BY subscription_status";
+        $subscriptionReport = $this->getDb()->fetchAll($sql);
+        
+        // Get plans performance
+        $sql = "SELECT 
+                    sp.name,
+                    COUNT(c.id) as clubs_count,
+                    COALESCE(SUM(cp.amount), 0) as total_revenue
+                FROM subscription_plans sp
+                LEFT JOIN clubs c ON sp.id = c.subscription_plan_id AND c.is_active = 1
+                LEFT JOIN club_payments cp ON c.id = cp.club_id AND cp.status = 'completed'
+                GROUP BY sp.id, sp.name
+                ORDER BY clubs_count DESC";
+        $plansPerformance = $this->getDb()->fetchAll($sql);
+        
+        $data = [
+            'title' => 'Reportes',
+            'revenue_report' => $revenueReport,
+            'club_growth_report' => $clubGrowthReport,
+            'subscription_report' => $subscriptionReport,
+            'plans_performance' => $plansPerformance
+        ];
+        
+        $this->view('superadmin/reports', $data);
+    }
+    
+    public function settings() {
+        $this->requireRole('superadmin');
+        
+        $data = [
+            'title' => 'Configuración del Sistema',
+            'error' => '',
+            'success' => ''
+        ];
+        
+        $settingsModel = $this->model('SystemSettings');
+        
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            // Save settings
+            foreach ($_POST as $key => $value) {
+                if (strpos($key, 'setting_') === 0) {
+                    $settingKey = substr($key, 8); // Remove 'setting_' prefix
+                    $settingsModel->update($settingKey, $value);
+                }
+            }
+            
+            $data['success'] = 'Configuración guardada exitosamente';
+        }
+        
+        // Get all settings grouped by category
+        $data['settings'] = $settingsModel->getAllGrouped();
+        
+        $this->view('superadmin/settings', $data);
+    }
 }
