@@ -1,5 +1,9 @@
-<div class="sidebar p-3">
-    <div class="mb-4">
+<div class="sidebar p-3" id="sidebar">
+    <button type="button" class="sidebar-close" id="sidebarClose">
+        <i class="bi bi-x-lg"></i>
+    </button>
+    
+    <div class="mb-4 mt-4">
         <h5 class="text-white"><i class="bi bi-speedometer2"></i> Panel de Control</h5>
     </div>
     

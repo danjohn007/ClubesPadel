@@ -85,20 +85,25 @@ class AuthController extends Controller {
             $userType = $_POST['user_type'] ?? 'player';
             $clubName = $_POST['club_name'] ?? '';
             $captcha = $_POST['captcha'] ?? '';
+            $terms = $_POST['terms'] ?? '';
             
             // Validation
-            if (empty($email) || empty($password) || empty($firstName) || empty($lastName)) {
+            if (empty($email) || empty($password) || empty($firstName) || empty($lastName) || empty($phone)) {
                 $data['error'] = 'Todos los campos obligatorios deben ser completados';
             } elseif ($userType === 'club' && empty($clubName)) {
                 $data['error'] = 'El nombre del club es obligatorio';
             } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 $data['error'] = 'Email inválido';
+            } elseif (!preg_match('/^[0-9]{10}$/', $phone)) {
+                $data['error'] = 'El teléfono debe tener exactamente 10 dígitos';
             } elseif (strlen($password) < PASSWORD_MIN_LENGTH) {
                 $data['error'] = 'La contraseña debe tener al menos ' . PASSWORD_MIN_LENGTH . ' caracteres';
             } elseif ($password !== $confirmPassword) {
                 $data['error'] = 'Las contraseñas no coinciden';
             } elseif (empty($captcha) || !isset($_SESSION['captcha_answer']) || intval($captcha) !== intval($_SESSION['captcha_answer'])) {
                 $data['error'] = 'Respuesta de verificación incorrecta';
+            } elseif (empty($terms)) {
+                $data['error'] = 'Debes aceptar los términos y condiciones para continuar';
             } else {
                 $userModel = $this->model('User');
                 

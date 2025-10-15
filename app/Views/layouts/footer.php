@@ -47,6 +47,31 @@
                     bsAlert.close();
                 }, 5000);
             });
+            
+            // Sidebar toggle functionality
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const sidebarClose = document.getElementById('sidebarClose');
+            const sidebar = document.getElementById('sidebar');
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+            
+            if (sidebarToggle && sidebar && sidebarOverlay) {
+                sidebarToggle.addEventListener('click', function() {
+                    sidebar.classList.add('active');
+                    sidebarOverlay.classList.add('active');
+                });
+                
+                if (sidebarClose) {
+                    sidebarClose.addEventListener('click', function() {
+                        sidebar.classList.remove('active');
+                        sidebarOverlay.classList.remove('active');
+                    });
+                }
+                
+                sidebarOverlay.addEventListener('click', function() {
+                    sidebar.classList.remove('active');
+                    sidebarOverlay.classList.remove('active');
+                });
+            }
         });
     </script>
 </body>

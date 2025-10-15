@@ -34,9 +34,36 @@
         }
         
         .sidebar {
-            min-height: calc(100vh - 56px);
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 280px;
+            height: 100vh;
             background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
             color: white;
+            transition: left 0.3s ease;
+            z-index: 1050;
+            overflow-y: auto;
+            padding-top: 1rem;
+        }
+        
+        .sidebar.active {
+            left: 0;
+        }
+        
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1040;
+            display: none;
+        }
+        
+        .sidebar-overlay.active {
+            display: block;
         }
         
         .sidebar .nav-link {
@@ -61,6 +88,17 @@
             margin-right: 0.5rem;
             width: 20px;
             text-align: center;
+        }
+        
+        .sidebar-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            background: none;
+            border: none;
         }
         
         .card {
@@ -141,6 +179,12 @@
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
         <div class="container-fluid">
+            <?php if (isset($_SESSION['user_id'])): ?>
+            <button class="btn btn-link text-dark me-2" id="sidebarToggle" type="button">
+                <i class="bi bi-list" style="font-size: 1.5rem;"></i>
+            </button>
+            <?php endif; ?>
+            
             <a class="navbar-brand" href="<?php echo URL_BASE; ?>">
                 <i class="bi bi-trophy-fill"></i> <?php echo APP_NAME; ?>
             </a>
@@ -179,3 +223,8 @@
             </div>
         </div>
     </nav>
+    
+    <!-- Sidebar Overlay -->
+    <?php if (isset($_SESSION['user_id'])): ?>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <?php endif; ?>
