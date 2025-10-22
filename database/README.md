@@ -78,9 +78,91 @@ mysql -u tu_usuario -p < enhanced_sample_data.sql
 
 **⚠️ IMPORTANTE:** Este script limpia todos los datos existentes antes de insertar los nuevos datos. No lo ejecutes en producción.
 
+### 4. `migration_crm_loyalty_modules.sql` ⭐ **NUEVO - SuperAdmin Modules**
+**Descripción:** Migración completa para los nuevos módulos de SuperAdmin: CRM Desarrollos, CRM Deportivas, Patrocinadores y Sistema de Lealtad.
+
+**Contenido:**
+- **13 nuevas tablas** para los módulos de CRM y Lealtad
+- Módulo **CRM Desarrollos** (desarrollos inmobiliarios)
+- Módulo **CRM Deportivas** (organizaciones deportivas)
+- Módulo **Patrocinadores** (sponsors y alianzas comerciales)
+- Módulo **Sistema de Lealtad** (programas de puntos y recompensas)
+- Mejoras a la tabla `clubs` con campos adicionales
+- Índices de rendimiento optimizados
+- Datos de ejemplo iniciales
+
+**Características especiales:**
+- ✅ **Idempotente** - Se puede ejecutar múltiples veces de forma segura
+- ✅ **Compatible** con datos existentes - No destructivo
+- ✅ **Listo para producción** - Con índices y restricciones apropiadas
+- ✅ **Verificación automática** - Revisa existencia de columnas e índices antes de crear
+
+**Tablas incluidas:**
+- `developments`, `development_clubs` - CRM Desarrollos
+- `sports_organizations`, `organization_clubs` - CRM Deportivas
+- `sponsors`, `sponsor_clubs`, `sponsor_payments` - Patrocinadores
+- `loyalty_programs`, `loyalty_tiers`, `loyalty_memberships`, `loyalty_transactions`, `loyalty_rewards`, `loyalty_redemptions` - Sistema de Lealtad
+
+**Uso:**
+```bash
+# Ejecutar después de tener el schema base
+mysql -u root -p clubespadel < migration_crm_loyalty_modules.sql
+```
+
+**⚠️ NOTA:** Este script requiere que el schema base (`schema.sql`) ya esté cargado, ya que hace referencia a tablas como `clubs` y `users`.
+
+### 5. `sample_data_crm_loyalty.sql`
+**Descripción:** Datos de ejemplo para los nuevos módulos de CRM y Lealtad.
+
+**Contenido:**
+- **4 desarrollos inmobiliarios** con diferentes estados
+- **5 organizaciones deportivas** (federaciones, asociaciones, ligas)
+- **5 patrocinadores** con diferentes niveles de sponsorización
+- **2 programas de lealtad** (global y específico de club)
+- **7 niveles/tiers** de lealtad
+- **7 recompensas** canjeables
+- **Transacciones de ejemplo** y relaciones entre entidades
+
+**Uso:**
+```bash
+# Ejecutar después de la migración de CRM y Lealtad
+mysql -u root -p clubespadel < sample_data_crm_loyalty.sql
+```
+
+### 6. `CRM_LOYALTY_MODULES_README.md`
+**Descripción:** Documentación técnica completa de los módulos de CRM y Lealtad.
+
+**Contiene:**
+- Descripción detallada de cada módulo
+- Estructura de todas las tablas nuevas
+- Relaciones y foreign keys
+- Ejemplos de consultas SQL
+- Casos de uso
+- Guía de mantenimiento
+- Troubleshooting
+
 ## Guía de Instalación Completa
 
-### Opción 1: Instalación Nueva (Recomendado)
+### Opción 1: Instalación Nueva con Módulos CRM y Lealtad (Recomendado) ⭐
+
+```bash
+# 1. Crear la base de datos
+mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS clubespadel DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+
+# 2. Crear el esquema base
+mysql -u root -p clubespadel < schema.sql
+
+# 3. Aplicar migración de módulos CRM y Lealtad
+mysql -u root -p clubespadel < migration_crm_loyalty_modules.sql
+
+# 4. Cargar datos de ejemplo mejorados (incluye datos básicos)
+mysql -u root -p clubespadel < enhanced_sample_data.sql
+
+# 5. Cargar datos de ejemplo de CRM y Lealtad
+mysql -u root -p clubespadel < sample_data_crm_loyalty.sql
+```
+
+### Opción 2: Instalación Básica (sin módulos CRM y Lealtad)
 
 ```bash
 # 1. Crear la base de datos
@@ -93,7 +175,17 @@ mysql -u root -p clubespadel < schema.sql
 mysql -u root -p clubespadel < enhanced_sample_data.sql
 ```
 
-### Opción 2: Actualización desde sample_data.sql
+### Opción 3: Actualizar Sistema Existente con Nuevos Módulos
+
+```bash
+# Si ya tienes el sistema funcionando y quieres agregar los módulos CRM y Lealtad
+mysql -u root -p clubespadel < migration_crm_loyalty_modules.sql
+
+# Opcionalmente, cargar datos de ejemplo
+mysql -u root -p clubespadel < sample_data_crm_loyalty.sql
+```
+
+### Opción 4: Actualización desde sample_data.sql
 
 ```bash
 # Si ya tienes datos básicos y quieres los mejorados
