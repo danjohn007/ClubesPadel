@@ -1,7 +1,11 @@
 -- ============================================
--- SQL Migration: SuperAdmin Module Enhancements
+-- SQL Migration: SuperAdmin Module Enhancements (import-ready)
 -- Date: 2025-10-22
 -- Description: Updates to support new CRM modules and enhanced club management
+-- Compatibility notes:
+--  - Uses information_schema checks and PREPARE/EXECUTE to run ALTER only when needed
+--  - Does NOT use AFTER clauses when adding columns (avoids errors if referenced columns don't exist)
+--  - For index creation additionally checks that referenced columns exist
 -- ============================================
 
 USE `clubespadel`;
@@ -287,41 +291,150 @@ CREATE TABLE IF NOT EXISTS `loyalty_redemptions` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================
--- 5. ENHANCED CLUB MANAGEMENT
+-- 5. ENHANCED CLUB MANAGEMENT (compatibility-safe)
 -- ============================================
 
--- Add postal_code field to clubs if not exists
-ALTER TABLE `clubs` 
-ADD COLUMN IF NOT EXISTS `postal_code` varchar(10) AFTER `state`;
+-- We'll use the current database as schema name
+SET @schema_name = DATABASE();
 
--- Add more detailed location tracking
-ALTER TABLE `clubs`
-ADD COLUMN IF NOT EXISTS `latitude` decimal(10,8) DEFAULT NULL AFTER `country`,
-ADD COLUMN IF NOT EXISTS `longitude` decimal(11,8) DEFAULT NULL AFTER `latitude`,
-ADD COLUMN IF NOT EXISTS `timezone` varchar(50) DEFAULT 'America/Mexico_City' AFTER `longitude`;
+-- Add postal_code if missing (no AFTER to avoid reference errors)
+SELECT COUNT(*) INTO @col_exists FROM information_schema.COLUMNS
+ WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'clubs' AND COLUMN_NAME = 'postal_code';
+SET @stmt = IF(@col_exists = 0,
+  'ALTER TABLE `clubs` ADD COLUMN `postal_code` varchar(10) DEFAULT NULL;',
+  'SELECT \"column postal_code already exists\";');
+PREPARE ps FROM @stmt; EXECUTE ps; DEALLOCATE PREPARE ps;
 
--- Add social media fields
-ALTER TABLE `clubs`
-ADD COLUMN IF NOT EXISTS `facebook_url` varchar(255) DEFAULT NULL AFTER `website`,
-ADD COLUMN IF NOT EXISTS `instagram_url` varchar(255) DEFAULT NULL AFTER `facebook_url`,
-ADD COLUMN IF NOT EXISTS `twitter_url` varchar(255) DEFAULT NULL AFTER `instagram_url`;
+-- latitude
+SELECT COUNT(*) INTO @col_exists FROM information_schema.COLUMNS
+ WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'clubs' AND COLUMN_NAME = 'latitude';
+SET @stmt = IF(@col_exists = 0,
+  'ALTER TABLE `clubs` ADD COLUMN `latitude` decimal(10,8) DEFAULT NULL;',
+  'SELECT \"column latitude already exists\";');
+PREPARE ps FROM @stmt; EXECUTE ps; DEALLOCATE PREPARE ps;
 
--- Add business information
-ALTER TABLE `clubs`
-ADD COLUMN IF NOT EXISTS `business_name` varchar(255) DEFAULT NULL AFTER `name`,
-ADD COLUMN IF NOT EXISTS `tax_id` varchar(50) DEFAULT NULL AFTER `business_name`,
-ADD COLUMN IF NOT EXISTS `business_type` enum('individual','corporation','llc','partnership','other') DEFAULT NULL AFTER `tax_id`;
+-- longitude
+SELECT COUNT(*) INTO @col_exists FROM information_schema.COLUMNS
+ WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'clubs' AND COLUMN_NAME = 'longitude';
+SET @stmt = IF(@col_exists = 0,
+  'ALTER TABLE `clubs` ADD COLUMN `longitude` decimal(11,8) DEFAULT NULL;',
+  'SELECT \"column longitude already exists\";');
+PREPARE ps FROM @stmt; EXECUTE ps; DEALLOCATE PREPARE ps;
+
+-- timezone
+SELECT COUNT(*) INTO @col_exists FROM information_schema.COLUMNS
+ WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'clubs' AND COLUMN_NAME = 'timezone';
+SET @stmt = IF(@col_exists = 0,
+  'ALTER TABLE `clubs` ADD COLUMN `timezone` varchar(50) DEFAULT ''America/Mexico_City'';',
+  'SELECT \"column timezone already exists\";');
+PREPARE ps FROM @stmt; EXECUTE ps; DEALLOCATE PREPARE ps;
+
+-- social media: facebook_url
+SELECT COUNT(*) INTO @col_exists FROM information_schema.COLUMNS
+ WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'clubs' AND COLUMN_NAME = 'facebook_url';
+SET @stmt = IF(@col_exists = 0,
+  'ALTER TABLE `clubs` ADD COLUMN `facebook_url` varchar(255) DEFAULT NULL;',
+  'SELECT \"column facebook_url already exists\";');
+PREPARE ps FROM @stmt; EXECUTE ps; DEALLOCATE PREPARE ps;
+
+-- instagram_url
+SELECT COUNT(*) INTO @col_exists FROM information_schema.COLUMNS
+ WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'clubs' AND COLUMN_NAME = 'instagram_url';
+SET @stmt = IF(@col_exists = 0,
+  'ALTER TABLE `clubs` ADD COLUMN `instagram_url` varchar(255) DEFAULT NULL;',
+  'SELECT \"column instagram_url already exists\";');
+PREPARE ps FROM @stmt; EXECUTE ps; DEALLOCATE PREPARE ps;
+
+-- twitter_url
+SELECT COUNT(*) INTO @col_exists FROM information_schema.COLUMNS
+ WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'clubs' AND COLUMN_NAME = 'twitter_url';
+SET @stmt = IF(@col_exists = 0,
+  'ALTER TABLE `clubs` ADD COLUMN `twitter_url` varchar(255) DEFAULT NULL;',
+  'SELECT \"column twitter_url already exists\";');
+PREPARE ps FROM @stmt; EXECUTE ps; DEALLOCATE PREPARE ps;
+
+-- business_name
+SELECT COUNT(*) INTO @col_exists FROM information_schema.COLUMNS
+ WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'clubs' AND COLUMN_NAME = 'business_name';
+SET @stmt = IF(@col_exists = 0,
+  'ALTER TABLE `clubs` ADD COLUMN `business_name` varchar(255) DEFAULT NULL;',
+  'SELECT \"column business_name already exists\";');
+PREPARE ps FROM @stmt; EXECUTE ps; DEALLOCATE PREPARE ps;
+
+-- tax_id
+SELECT COUNT(*) INTO @col_exists FROM information_schema.COLUMNS
+ WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'clubs' AND COLUMN_NAME = 'tax_id';
+SET @stmt = IF(@col_exists = 0,
+  'ALTER TABLE `clubs` ADD COLUMN `tax_id` varchar(50) DEFAULT NULL;',
+  'SELECT \"column tax_id already exists\";');
+PREPARE ps FROM @stmt; EXECUTE ps; DEALLOCATE PREPARE ps;
+
+-- business_type (enum)
+SELECT COUNT(*) INTO @col_exists FROM information_schema.COLUMNS
+ WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'clubs' AND COLUMN_NAME = 'business_type';
+SET @stmt = IF(@col_exists = 0,
+  'ALTER TABLE `clubs` ADD COLUMN `business_type` enum(''individual'',''corporation'',''llc'',''partnership'',''other'') DEFAULT NULL;',
+  'SELECT \"column business_type already exists\";');
+PREPARE ps FROM @stmt; EXECUTE ps; DEALLOCATE PREPARE ps;
 
 -- ============================================
--- 6. INDEXES FOR BETTER PERFORMANCE
+-- 6. INDEXES FOR BETTER PERFORMANCE (compatibility-safe)
 -- ============================================
+-- For each index, check index existence AND check referenced columns exist before creating index.
 
--- Add indexes to existing tables for better query performance
-ALTER TABLE `clubs` ADD INDEX IF NOT EXISTS `idx_subscription_status` (`subscription_status`);
-ALTER TABLE `clubs` ADD INDEX IF NOT EXISTS `idx_city_state` (`city`, `state`);
-ALTER TABLE `users` ADD INDEX IF NOT EXISTS `idx_club_role` (`club_id`, `role`);
-ALTER TABLE `club_payments` ADD INDEX IF NOT EXISTS `idx_payment_date` (`payment_date`);
-ALTER TABLE `club_payments` ADD INDEX IF NOT EXISTS `idx_status` (`status`);
+-- clubs.idx_subscription_status (requires column subscription_status)
+SELECT COUNT(*) INTO @idx_exists FROM information_schema.STATISTICS
+ WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'clubs' AND INDEX_NAME = 'idx_subscription_status';
+SELECT COUNT(*) INTO @col_exists FROM information_schema.COLUMNS
+ WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'clubs' AND COLUMN_NAME = 'subscription_status';
+SET @stmt = IF(@idx_exists = 0 AND @col_exists > 0,
+  'ALTER TABLE `clubs` ADD INDEX `idx_subscription_status` (`subscription_status`);',
+  'SELECT \"index idx_subscription_status already exists or column missing\";');
+PREPARE ps FROM @stmt; EXECUTE ps; DEALLOCATE PREPARE ps;
+
+-- clubs.idx_city_state (requires columns city and state)
+SELECT COUNT(*) INTO @idx_exists FROM information_schema.STATISTICS
+ WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'clubs' AND INDEX_NAME = 'idx_city_state';
+SELECT COUNT(*) INTO @col_city FROM information_schema.COLUMNS
+ WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'clubs' AND COLUMN_NAME = 'city';
+SELECT COUNT(*) INTO @col_state FROM information_schema.COLUMNS
+ WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'clubs' AND COLUMN_NAME = 'state';
+SET @stmt = IF(@idx_exists = 0 AND @col_city > 0 AND @col_state > 0,
+  'ALTER TABLE `clubs` ADD INDEX `idx_city_state` (`city`, `state`);',
+  'SELECT \"index idx_city_state already exists or required columns missing\";');
+PREPARE ps FROM @stmt; EXECUTE ps; DEALLOCATE PREPARE ps;
+
+-- users.idx_club_role (requires columns club_id and role)
+SELECT COUNT(*) INTO @idx_exists FROM information_schema.STATISTICS
+ WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'users' AND INDEX_NAME = 'idx_club_role';
+SELECT COUNT(*) INTO @col_club_id FROM information_schema.COLUMNS
+ WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'users' AND COLUMN_NAME = 'club_id';
+SELECT COUNT(*) INTO @col_role FROM information_schema.COLUMNS
+ WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'users' AND COLUMN_NAME = 'role';
+SET @stmt = IF(@idx_exists = 0 AND @col_club_id > 0 AND @col_role > 0,
+  'ALTER TABLE `users` ADD INDEX `idx_club_role` (`club_id`, `role`);',
+  'SELECT \"index idx_club_role already exists or required columns missing\";');
+PREPARE ps FROM @stmt; EXECUTE ps; DEALLOCATE PREPARE ps;
+
+-- club_payments.idx_payment_date (requires payment_date)
+SELECT COUNT(*) INTO @idx_exists FROM information_schema.STATISTICS
+ WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'club_payments' AND INDEX_NAME = 'idx_payment_date';
+SELECT COUNT(*) INTO @col_payment_date FROM information_schema.COLUMNS
+ WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'club_payments' AND COLUMN_NAME = 'payment_date';
+SET @stmt = IF(@idx_exists = 0 AND @col_payment_date > 0,
+  'ALTER TABLE `club_payments` ADD INDEX `idx_payment_date` (`payment_date`);',
+  'SELECT \"index idx_payment_date already exists or column missing\";');
+PREPARE ps FROM @stmt; EXECUTE ps; DEALLOCATE PREPARE ps;
+
+-- club_payments.idx_status (requires status)
+SELECT COUNT(*) INTO @idx_exists FROM information_schema.STATISTICS
+ WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'club_payments' AND INDEX_NAME = 'idx_status';
+SELECT COUNT(*) INTO @col_status FROM information_schema.COLUMNS
+ WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'club_payments' AND COLUMN_NAME = 'status';
+SET @stmt = IF(@idx_exists = 0 AND @col_status > 0,
+  'ALTER TABLE `club_payments` ADD INDEX `idx_status` (`status`);',
+  'SELECT \"index idx_status already exists or column missing\";');
+PREPARE ps FROM @stmt; EXECUTE ps; DEALLOCATE PREPARE ps;
 
 -- ============================================
 -- 7. SAMPLE DATA FOR NEW MODULES (Optional)
