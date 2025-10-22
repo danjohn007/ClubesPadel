@@ -1,16 +1,14 @@
 -- ============================================
 -- SQL Migration: CRM and Loyalty System Modules
 -- Date: 2025-10-22
--- Description: Complete migration for SuperAdmin CRM modules:
---              - CRM Desarrollos (Real Estate Developments)
---              - CRM Deportivas (Sports Organizations)
---              - Patrocinadores (Sponsors)
---              - Sistema de Lealtad (Loyalty Program)
--- 
--- This migration is designed to be:
--- - Idempotent (can be run multiple times safely)
--- - Compatible with existing data
--- - Production-ready with proper indexes and constraints
+-- Description: Complete idempotent migration for SuperAdmin CRM modules
+--              Ready to import without producing #1054 column-not-found errors
+-- Notes: This script is safe to run multiple times. It:
+--   - Creates required tables if missing
+--   - Adds missing loyalty_tiers columns (discount_percentage, is_active, created_at, updated_at) only if they don't exist
+--   - Attempts to create a UNIQUE index on (program_id, name) only if safe (no duplicates)
+--   - Inserts/updates sample data using INSERT ... ON DUPLICATE KEY UPDATE when the unique index exists
+-- IMPORTANT: Always backup your database before running migrations.
 -- ============================================
 
 USE `clubespadel`;
@@ -23,10 +21,10 @@ SET time_zone = "+00:00";
 SET @schema_name = DATABASE();
 
 -- ============================================
--- 1. CRM DESARROLLOS (Real Estate Developments Module)
+-- 1) CORE TABLES (idempotent creation)
 -- ============================================
 
--- Main table for real estate developments
+-- (A) developments
 CREATE TABLE IF NOT EXISTS `developments` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(200) NOT NULL,
@@ -62,7 +60,7 @@ CREATE TABLE IF NOT EXISTS `developments` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Real estate developments and sports complexes';
 
--- Link developments to clubs (many-to-many relationship)
+-- (B) development_clubs
 CREATE TABLE IF NOT EXISTS `development_clubs` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `development_id` int(11) NOT NULL,
@@ -86,11 +84,7 @@ CREATE TABLE IF NOT EXISTS `development_clubs` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Links developments to clubs';
 
--- ============================================
--- 2. CRM DEPORTIVAS (Sports Organizations Module)
--- ============================================
-
--- Main table for sports organizations, federations, and associations
+-- (C) sports_organizations
 CREATE TABLE IF NOT EXISTS `sports_organizations` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(200) NOT NULL,
@@ -122,7 +116,7 @@ CREATE TABLE IF NOT EXISTS `sports_organizations` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Sports organizations, federations, and associations';
 
--- Link sports organizations to clubs (many-to-many relationship)
+-- (D) organization_clubs
 CREATE TABLE IF NOT EXISTS `organization_clubs` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `organization_id` int(11) NOT NULL,
@@ -150,11 +144,7 @@ CREATE TABLE IF NOT EXISTS `organization_clubs` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Links sports organizations to clubs';
 
--- ============================================
--- 3. PATROCINADORES (Sponsors Module)
--- ============================================
-
--- Main table for sponsors and commercial partners
+-- (E) sponsors
 CREATE TABLE IF NOT EXISTS `sponsors` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `company_name` varchar(200) NOT NULL,
@@ -190,7 +180,7 @@ CREATE TABLE IF NOT EXISTS `sponsors` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Sponsors and commercial partners';
 
--- Link sponsors to clubs (many-to-many relationship)
+-- (F) sponsor_clubs
 CREATE TABLE IF NOT EXISTS `sponsor_clubs` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `sponsor_id` int(11) NOT NULL,
@@ -217,7 +207,7 @@ CREATE TABLE IF NOT EXISTS `sponsor_clubs` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Links sponsors to specific clubs';
 
--- Track sponsor payments and invoicing
+-- (G) sponsor_payments
 CREATE TABLE IF NOT EXISTS `sponsor_payments` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `sponsor_club_id` int(11) NOT NULL,
@@ -240,10 +230,9 @@ CREATE TABLE IF NOT EXISTS `sponsor_payments` (
 COMMENT='Track sponsor payments and invoices';
 
 -- ============================================
--- 4. SISTEMA DE LEALTAD (Loyalty Program Module)
+-- 2) LOYALTY MODULE (create base tables with full schema)
 -- ============================================
 
--- Main table for loyalty programs (can be global or club-specific)
 CREATE TABLE IF NOT EXISTS `loyalty_programs` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `club_id` int(11) DEFAULT NULL COMMENT 'NULL for global/system-wide programs',
@@ -272,7 +261,8 @@ CREATE TABLE IF NOT EXISTS `loyalty_programs` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Loyalty program configurations';
 
--- Loyalty program tiers/levels (Bronze, Silver, Gold, etc.)
+-- Create loyalty_tiers with the complete set of columns (safe on first create).
+-- For databases where loyalty_tiers already exists but misses columns, we also run idempotent ALTER statements below.
 CREATE TABLE IF NOT EXISTS `loyalty_tiers` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `program_id` int(11) NOT NULL,
@@ -295,7 +285,7 @@ CREATE TABLE IF NOT EXISTS `loyalty_tiers` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Tiers/levels within loyalty programs';
 
--- User enrollment in loyalty programs
+-- (Other loyalty tables)
 CREATE TABLE IF NOT EXISTS `loyalty_memberships` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `program_id` int(11) NOT NULL,
@@ -328,7 +318,6 @@ CREATE TABLE IF NOT EXISTS `loyalty_memberships` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='User memberships in loyalty programs';
 
--- Track all points transactions (earn, redeem, expire, etc.)
 CREATE TABLE IF NOT EXISTS `loyalty_transactions` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `membership_id` int(11) NOT NULL,
@@ -355,7 +344,6 @@ CREATE TABLE IF NOT EXISTS `loyalty_transactions` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='All loyalty points transactions';
 
--- Catalog of rewards that can be redeemed with points
 CREATE TABLE IF NOT EXISTS `loyalty_rewards` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `program_id` int(11) NOT NULL,
@@ -387,7 +375,6 @@ CREATE TABLE IF NOT EXISTS `loyalty_rewards` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='Catalog of rewards available for redemption';
 
--- Track reward redemptions by users
 CREATE TABLE IF NOT EXISTS `loyalty_redemptions` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `membership_id` int(11) NOT NULL,
@@ -421,13 +408,10 @@ CREATE TABLE IF NOT EXISTS `loyalty_redemptions` (
 COMMENT='Track reward redemptions by users';
 
 -- ============================================
--- 5. ENHANCED CLUB MANAGEMENT (Improvements)
+-- 3) ENHANCEMENTS TO EXISTING TABLES (idempotent ALTER)
 -- ============================================
 
 -- Add additional fields to clubs table if they don't exist
--- Using dynamic SQL to avoid errors if columns already exist
-
--- postal_code
 SELECT COUNT(*) INTO @col_exists FROM information_schema.COLUMNS
  WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'clubs' AND COLUMN_NAME = 'postal_code';
 SET @stmt = IF(@col_exists = 0,
@@ -435,7 +419,6 @@ SET @stmt = IF(@col_exists = 0,
   'SELECT "Column postal_code already exists" AS message;');
 PREPARE ps FROM @stmt; EXECUTE ps; DEALLOCATE PREPARE ps;
 
--- latitude
 SELECT COUNT(*) INTO @col_exists FROM information_schema.COLUMNS
  WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'clubs' AND COLUMN_NAME = 'latitude';
 SET @stmt = IF(@col_exists = 0,
@@ -443,7 +426,6 @@ SET @stmt = IF(@col_exists = 0,
   'SELECT "Column latitude already exists" AS message;');
 PREPARE ps FROM @stmt; EXECUTE ps; DEALLOCATE PREPARE ps;
 
--- longitude
 SELECT COUNT(*) INTO @col_exists FROM information_schema.COLUMNS
  WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'clubs' AND COLUMN_NAME = 'longitude';
 SET @stmt = IF(@col_exists = 0,
@@ -451,7 +433,6 @@ SET @stmt = IF(@col_exists = 0,
   'SELECT "Column longitude already exists" AS message;');
 PREPARE ps FROM @stmt; EXECUTE ps; DEALLOCATE PREPARE ps;
 
--- timezone
 SELECT COUNT(*) INTO @col_exists FROM information_schema.COLUMNS
  WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'clubs' AND COLUMN_NAME = 'timezone';
 SET @stmt = IF(@col_exists = 0,
@@ -459,7 +440,6 @@ SET @stmt = IF(@col_exists = 0,
   'SELECT "Column timezone already exists" AS message;');
 PREPARE ps FROM @stmt; EXECUTE ps; DEALLOCATE PREPARE ps;
 
--- facebook_url
 SELECT COUNT(*) INTO @col_exists FROM information_schema.COLUMNS
  WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'clubs' AND COLUMN_NAME = 'facebook_url';
 SET @stmt = IF(@col_exists = 0,
@@ -467,7 +447,6 @@ SET @stmt = IF(@col_exists = 0,
   'SELECT "Column facebook_url already exists" AS message;');
 PREPARE ps FROM @stmt; EXECUTE ps; DEALLOCATE PREPARE ps;
 
--- instagram_url
 SELECT COUNT(*) INTO @col_exists FROM information_schema.COLUMNS
  WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'clubs' AND COLUMN_NAME = 'instagram_url';
 SET @stmt = IF(@col_exists = 0,
@@ -475,7 +454,6 @@ SET @stmt = IF(@col_exists = 0,
   'SELECT "Column instagram_url already exists" AS message;');
 PREPARE ps FROM @stmt; EXECUTE ps; DEALLOCATE PREPARE ps;
 
--- twitter_url
 SELECT COUNT(*) INTO @col_exists FROM information_schema.COLUMNS
  WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'clubs' AND COLUMN_NAME = 'twitter_url';
 SET @stmt = IF(@col_exists = 0,
@@ -483,7 +461,6 @@ SET @stmt = IF(@col_exists = 0,
   'SELECT "Column twitter_url already exists" AS message;');
 PREPARE ps FROM @stmt; EXECUTE ps; DEALLOCATE PREPARE ps;
 
--- business_name
 SELECT COUNT(*) INTO @col_exists FROM information_schema.COLUMNS
  WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'clubs' AND COLUMN_NAME = 'business_name';
 SET @stmt = IF(@col_exists = 0,
@@ -491,7 +468,6 @@ SET @stmt = IF(@col_exists = 0,
   'SELECT "Column business_name already exists" AS message;');
 PREPARE ps FROM @stmt; EXECUTE ps; DEALLOCATE PREPARE ps;
 
--- tax_id
 SELECT COUNT(*) INTO @col_exists FROM information_schema.COLUMNS
  WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'clubs' AND COLUMN_NAME = 'tax_id';
 SET @stmt = IF(@col_exists = 0,
@@ -499,7 +475,6 @@ SET @stmt = IF(@col_exists = 0,
   'SELECT "Column tax_id already exists" AS message;');
 PREPARE ps FROM @stmt; EXECUTE ps; DEALLOCATE PREPARE ps;
 
--- business_type
 SELECT COUNT(*) INTO @col_exists FROM information_schema.COLUMNS
  WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'clubs' AND COLUMN_NAME = 'business_type';
 SET @stmt = IF(@col_exists = 0,
@@ -508,12 +483,9 @@ SET @stmt = IF(@col_exists = 0,
 PREPARE ps FROM @stmt; EXECUTE ps; DEALLOCATE PREPARE ps;
 
 -- ============================================
--- 6. PERFORMANCE INDEXES
+-- 4) PERFORMANCE INDEXES (idempotent)
 -- ============================================
 
--- Add performance indexes if they don't exist
-
--- clubs.idx_subscription_status
 SELECT COUNT(*) INTO @idx_exists FROM information_schema.STATISTICS
  WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'clubs' AND INDEX_NAME = 'idx_subscription_status';
 SELECT COUNT(*) INTO @col_exists FROM information_schema.COLUMNS
@@ -523,7 +495,6 @@ SET @stmt = IF(@idx_exists = 0 AND @col_exists > 0,
   'SELECT "Index idx_subscription_status already exists or column missing" AS message;');
 PREPARE ps FROM @stmt; EXECUTE ps; DEALLOCATE PREPARE ps;
 
--- clubs.idx_city_state
 SELECT COUNT(*) INTO @idx_exists FROM information_schema.STATISTICS
  WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'clubs' AND INDEX_NAME = 'idx_city_state';
 SELECT COUNT(*) INTO @col_city FROM information_schema.COLUMNS
@@ -535,7 +506,6 @@ SET @stmt = IF(@idx_exists = 0 AND @col_city > 0 AND @col_state > 0,
   'SELECT "Index idx_city_state already exists or required columns missing" AS message;');
 PREPARE ps FROM @stmt; EXECUTE ps; DEALLOCATE PREPARE ps;
 
--- users.idx_club_role
 SELECT COUNT(*) INTO @idx_exists FROM information_schema.STATISTICS
  WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'users' AND INDEX_NAME = 'idx_club_role';
 SELECT COUNT(*) INTO @col_club_id FROM information_schema.COLUMNS
@@ -547,7 +517,6 @@ SET @stmt = IF(@idx_exists = 0 AND @col_club_id > 0 AND @col_role > 0,
   'SELECT "Index idx_club_role already exists or required columns missing" AS message;');
 PREPARE ps FROM @stmt; EXECUTE ps; DEALLOCATE PREPARE ps;
 
--- club_payments.idx_payment_date
 SELECT COUNT(*) INTO @idx_exists FROM information_schema.STATISTICS
  WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'club_payments' AND INDEX_NAME = 'idx_payment_date';
 SELECT COUNT(*) INTO @col_payment_date FROM information_schema.COLUMNS
@@ -557,7 +526,6 @@ SET @stmt = IF(@idx_exists = 0 AND @col_payment_date > 0,
   'SELECT "Index idx_payment_date already exists or column missing" AS message;');
 PREPARE ps FROM @stmt; EXECUTE ps; DEALLOCATE PREPARE ps;
 
--- club_payments.idx_status
 SELECT COUNT(*) INTO @idx_exists FROM information_schema.STATISTICS
  WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'club_payments' AND INDEX_NAME = 'idx_status';
 SELECT COUNT(*) INTO @col_status FROM information_schema.COLUMNS
@@ -568,25 +536,97 @@ SET @stmt = IF(@idx_exists = 0 AND @col_status > 0,
 PREPARE ps FROM @stmt; EXECUTE ps; DEALLOCATE PREPARE ps;
 
 -- ============================================
--- 7. SAMPLE DATA FOR NEW MODULES
+-- 5) SAMPLE DATA: LOYALTY PROGRAM + TIERS (idempotent, safe)
 -- ============================================
 
--- Insert a default global loyalty program if it doesn't exist
+-- Insert default global loyalty program if it doesn't exist
 INSERT IGNORE INTO `loyalty_programs` 
 (`id`, `club_id`, `name`, `description`, `program_type`, `points_per_currency`, `welcome_bonus_points`, `is_active`)
 VALUES 
 (1, NULL, 'Programa Global ClubesPadel', 'Programa de lealtad global para todos los clubes de la red', 'points', 1.00, 100, 1);
 
--- Insert default loyalty tiers for the global program
-INSERT IGNORE INTO `loyalty_tiers` 
-(`program_id`, `name`, `tier_level`, `min_points_required`, `points_multiplier`, `discount_percentage`)
-VALUES 
-(1, 'Bronce', 3, 0, 1.00, 0.00),
-(1, 'Plata', 2, 1000, 1.25, 5.00),
-(1, 'Oro', 1, 5000, 1.50, 10.00);
+-- Ensure loyalty_tiers has necessary columns in case previous schema was missing them
+-- (these ALTERs only run when columns do not exist, so the script stays idempotent)
+
+-- discount_percentage
+SELECT COUNT(*) INTO @col_exists FROM information_schema.COLUMNS
+ WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'loyalty_tiers' AND COLUMN_NAME = 'discount_percentage';
+SET @stmt = IF(@col_exists = 0,
+  'ALTER TABLE `loyalty_tiers` ADD COLUMN `discount_percentage` DECIMAL(5,2) DEFAULT 0.00;',
+  'SELECT "Column discount_percentage already exists" AS message;');
+PREPARE ps FROM @stmt; EXECUTE ps; DEALLOCATE PREPARE ps;
+
+-- is_active
+SELECT COUNT(*) INTO @col_exists FROM information_schema.COLUMNS
+ WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'loyalty_tiers' AND COLUMN_NAME = 'is_active';
+SET @stmt = IF(@col_exists = 0,
+  'ALTER TABLE `loyalty_tiers` ADD COLUMN `is_active` TINYINT(1) NOT NULL DEFAULT 1;',
+  'SELECT "Column is_active already exists" AS message;');
+PREPARE ps FROM @stmt; EXECUTE ps; DEALLOCATE PREPARE ps;
+
+-- created_at
+SELECT COUNT(*) INTO @col_exists FROM information_schema.COLUMNS
+ WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'loyalty_tiers' AND COLUMN_NAME = 'created_at';
+SET @stmt = IF(@col_exists = 0,
+  'ALTER TABLE `loyalty_tiers` ADD COLUMN `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;',
+  'SELECT "Column created_at already exists" AS message;');
+PREPARE ps FROM @stmt; EXECUTE ps; DEALLOCATE PREPARE ps;
+
+-- updated_at
+SELECT COUNT(*) INTO @col_exists FROM information_schema.COLUMNS
+ WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'loyalty_tiers' AND COLUMN_NAME = 'updated_at';
+SET @stmt = IF(@col_exists = 0,
+  'ALTER TABLE `loyalty_tiers` ADD COLUMN `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;',
+  'SELECT "Column updated_at already exists" AS message;');
+PREPARE ps FROM @stmt; EXECUTE ps; DEALLOCATE PREPARE ps;
 
 -- ============================================
--- 8. FINAL CLEANUP AND VALIDATION
+-- 6) Create UNIQUE INDEX (safe)
+-- ============================================
+
+-- Create unique index only if it does not exist and there are no duplicate (program_id, name) groups.
+SELECT COUNT(*) INTO @idx_exists FROM information_schema.STATISTICS
+ WHERE TABLE_SCHEMA = @schema_name AND TABLE_NAME = 'loyalty_tiers' AND INDEX_NAME = 'unique_program_tier';
+
+-- Count duplicate (program_id, name) groups (returns 0 if none)
+SELECT COUNT(*) INTO @dup_count FROM (
+  SELECT program_id, name, COUNT(*) AS c FROM `loyalty_tiers` GROUP BY program_id, name HAVING c > 1
+) AS t;
+
+SET @stmt = IF(@idx_exists = 0 AND @dup_count = 0,
+  'ALTER TABLE `loyalty_tiers` ADD UNIQUE KEY `unique_program_tier` (`program_id`, `name`);',
+  'SELECT "Skipping unique index creation: already exists or duplicates present" AS message;');
+
+PREPARE ps FROM @stmt; EXECUTE ps; DEALLOCATE PREPARE ps;
+
+-- If duplicates exist, show them for manual review (interactive clients will show rows)
+SELECT program_id, name, COUNT(*) AS cnt
+ FROM `loyalty_tiers`
+ GROUP BY program_id, name
+ HAVING cnt > 1;
+
+-- ============================================
+-- 7) Insert or update default loyalty tiers for the global program
+--    - If unique index was created, ON DUPLICATE KEY UPDATE will update existing rows.
+--    - If unique index wasn't created due to duplicates, the INSERT will not error but won't update duplicates.
+-- ============================================
+
+INSERT INTO `loyalty_tiers` 
+(`program_id`, `name`, `tier_level`, `min_points_required`, `points_multiplier`, `discount_percentage`, `is_active`, `created_at`, `updated_at`)
+VALUES 
+(1, 'Bronce', 3, 0, 1.00, 0.00, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(1, 'Plata', 2, 1000, 1.25, 5.00, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+(1, 'Oro', 1, 5000, 1.50, 10.00, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON DUPLICATE KEY UPDATE
+  `tier_level` = VALUES(`tier_level`),
+  `min_points_required` = VALUES(`min_points_required`),
+  `points_multiplier` = VALUES(`points_multiplier`),
+  `discount_percentage` = VALUES(`discount_percentage`),
+  `is_active` = VALUES(`is_active`),
+  `updated_at` = CURRENT_TIMESTAMP;
+
+-- ============================================
+-- 8) FINAL CLEANUP
 -- ============================================
 
 SET FOREIGN_KEY_CHECKS = 1;
@@ -594,24 +634,7 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- ============================================
 -- MIGRATION COMPLETE
 -- ============================================
--- Tables Created:
---   1. developments (CRM Desarrollos)
---   2. development_clubs (Link developments to clubs)
---   3. sports_organizations (CRM Deportivas)
---   4. organization_clubs (Link organizations to clubs)
---   5. sponsors (Patrocinadores)
---   6. sponsor_clubs (Link sponsors to clubs)
---   7. sponsor_payments (Track sponsor payments)
---   8. loyalty_programs (Sistema de Lealtad)
---   9. loyalty_tiers (Loyalty program tiers)
---   10. loyalty_memberships (User loyalty memberships)
---   11. loyalty_transactions (Points transactions)
---   12. loyalty_rewards (Rewards catalog)
---   13. loyalty_redemptions (Reward redemptions)
---
--- Enhanced:
---   - clubs table with additional fields
---   - Performance indexes added
---
--- This migration maintains backward compatibility with existing data.
+-- This file intentionally includes idempotent checks to ensure:
+--  - No #1054 unknown column errors occur during import
+--  - The loyalty_tiers sample rows are inserted or updated safely
 -- ============================================
