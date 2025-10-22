@@ -120,7 +120,6 @@ class SuperadminController extends Controller {
                 }
             } elseif ($_POST['action'] === 'edit' && isset($_POST['club_id'])) {
                 $clubData = [
-                    'name' => $_POST['name'] ?? '',
                     'email' => $_POST['email'] ?? '',
                     'phone' => $_POST['phone'] ?? '',
                     'address' => $_POST['address'] ?? '',
@@ -134,6 +133,24 @@ class SuperadminController extends Controller {
                     $data['clubs'] = $clubs;
                 } else {
                     $data['error'] = 'Error al actualizar el club';
+                }
+            } elseif ($_POST['action'] === 'suspend' && isset($_POST['club_id'])) {
+                $sql = "UPDATE clubs SET subscription_status = 'suspended' WHERE id = ?";
+                if ($this->getDb()->query($sql, [$_POST['club_id']])) {
+                    $data['success'] = 'Club suspendido exitosamente';
+                    $clubs = $clubModel->getAll();
+                    $data['clubs'] = $clubs;
+                } else {
+                    $data['error'] = 'Error al suspender el club';
+                }
+            } elseif ($_POST['action'] === 'reactivate' && isset($_POST['club_id'])) {
+                $sql = "UPDATE clubs SET subscription_status = 'active' WHERE id = ?";
+                if ($this->getDb()->query($sql, [$_POST['club_id']])) {
+                    $data['success'] = 'Club reactivado exitosamente';
+                    $clubs = $clubModel->getAll();
+                    $data['clubs'] = $clubs;
+                } else {
+                    $data['error'] = 'Error al reactivar el club';
                 }
             }
         }
@@ -318,5 +335,67 @@ class SuperadminController extends Controller {
         $data['settings'] = $settingsModel->getAllGrouped();
         
         $this->view('superadmin/settings', $data);
+    }
+    
+    public function users() {
+        $this->requireRole('superadmin');
+        
+        // Get all users across all clubs
+        $sql = "SELECT u.*, c.name as club_name 
+                FROM users u
+                LEFT JOIN clubs c ON u.club_id = c.id
+                ORDER BY u.created_at DESC";
+        $users = $this->getDb()->fetchAll($sql);
+        
+        $data = [
+            'title' => 'CRM Usuarios',
+            'users' => $users
+        ];
+        
+        $this->view('superadmin/users', $data);
+    }
+    
+    public function developments() {
+        $this->requireRole('superadmin');
+        
+        $data = [
+            'title' => 'CRM Desarrollos',
+            'developments' => []
+        ];
+        
+        $this->view('superadmin/developments', $data);
+    }
+    
+    public function sports() {
+        $this->requireRole('superadmin');
+        
+        $data = [
+            'title' => 'CRM Deportivas',
+            'sports' => []
+        ];
+        
+        $this->view('superadmin/sports', $data);
+    }
+    
+    public function sponsors() {
+        $this->requireRole('superadmin');
+        
+        $data = [
+            'title' => 'Patrocinadores',
+            'sponsors' => []
+        ];
+        
+        $this->view('superadmin/sponsors', $data);
+    }
+    
+    public function loyalty() {
+        $this->requireRole('superadmin');
+        
+        $data = [
+            'title' => 'Sistema de Lealtad',
+            'loyalty_programs' => []
+        ];
+        
+        $this->view('superadmin/loyalty', $data);
     }
 }
